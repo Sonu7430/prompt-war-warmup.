@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import type { ScamVerdict, CaregiverDispatchResponse } from '../types';
 import { dispatchCaregiver, listCaregiverDispatches } from '../api';
+import { useCompanionContext, type CaregiverAlert } from '../context/CompanionContext';
 
 interface CaregiverBridgeProps {
   flaggedScamContext?: ScamVerdict | null;
@@ -14,6 +15,7 @@ export const CaregiverBridge: React.FC<CaregiverBridgeProps> = ({
   onClearScamContext,
   onAnnounceAudio,
 }) => {
+  const { caregiverAlerts } = useCompanionContext();
   const [caregiverName] = useState<string>("Sarah Miller (Daughter)");
   const [caregiverPhone] = useState<string>("(555) 234-5678");
   const [customNote, setCustomNote] = useState<string>("");
@@ -192,6 +194,51 @@ export const CaregiverBridge: React.FC<CaregiverBridgeProps> = ({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Active Interlinked Caregiver Alerts (Logged from Scam Shield) */}
+      {caregiverAlerts && caregiverAlerts.length > 0 && (
+        <div
+          role="region"
+          aria-label="Active Guardian Threat Alerts"
+          className="mt-6 p-6 rounded-3xl bg-rose-50/90 dark:bg-rose-950/50 border-3 border-rose-400 dark:border-rose-700 shadow-md space-y-4"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-xl font-black text-rose-900 dark:text-rose-100 flex items-center gap-2 m-0">
+              <span aria-hidden="true">🚨</span>
+              <span>Active Guardian Threat Alerts ({caregiverAlerts.length})</span>
+            </h3>
+            <span className="text-xs font-bold uppercase px-3 py-1 rounded-full bg-rose-200 dark:bg-rose-900 text-rose-900 dark:text-rose-100">
+              Scam Shield Interlink
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {caregiverAlerts.map((alert: CaregiverAlert) => (
+              <div
+                key={alert.id}
+                className="p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-rose-300 dark:border-rose-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded bg-rose-600 text-white">
+                      {alert.threatLevel} THREAT
+                    </span>
+                    <strong className="text-base font-bold text-slate-800 dark:text-slate-100">
+                      Source: {alert.source}
+                    </strong>
+                  </div>
+                  <p className="text-base font-medium text-slate-700 dark:text-slate-300 m-0">
+                    {alert.summary}
+                  </p>
+                </div>
+                <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 flex-shrink-0">
+                  {alert.timestamp}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}

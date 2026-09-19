@@ -13,6 +13,8 @@ import {
 import type { ScamVerdict } from '../types';
 import { analyzeScamMessage, pinScamWarning, dispatchCaregiver } from '../api';
 import { getCachedScamAnalysis, setCachedScamAnalysis } from '../utils/clientCache';
+import { getCachedResponse, setCachedResponse } from '../utils/cache';
+import { useCompanionContext } from '../context/CompanionContext';
 import { VoiceSpeakerButton, VoiceInputMicButton } from './VoiceController';
 
 interface ScamShieldViewProps {
@@ -45,6 +47,7 @@ export const ScamShieldView: React.FC<ScamShieldViewProps> = ({
   onWarningPinned,
   onAlertFamily,
 }) => {
+  const { logScamThreat } = useCompanionContext();
   const [inputText, setInputText] = useState(SAMPLE_SCAMS[0].text);
   const [verdict, setVerdict] = useState<ScamVerdict | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,13 +59,23 @@ export const ScamShieldView: React.FC<ScamShieldViewProps> = ({
   const handleCheckMessage = async () => {
     if (!inputText.trim()) return;
 
-    // 1. Tier-1 Persistent Client Cache Check (0ms latency, 0 token spend)
-    const cached = getCachedScamAnalysis(inputText);
+    // 1. Client-Side Memory & Query Cache Check (<100ms / 0ms latency, 0 token spend)
+    const cacheKey = `scam_${inputText.toLowerCase().replace(/[^\w]/g, '')}`;
+    const cached = getCachedResponse(cacheKey) || getCachedScamAnalysis(inputText);
     if (cached) {
       setVerdict(cached);
       setIsPinned(false);
       setFamilyAlertDispatched(false);
       setLoading(false);
+
+      // Proactive Workflow Interlink: Scam Shield logs straight to Caregiver Bridge
+      if (cached.threat_score > 75) {
+        logScamThreat({
+          threatScore: cached.threat_score,
+          explanation: cached.plain_explanation,
+          sender: 'SMS Intercept'
+        });
+      }
       return;
     }
 
@@ -73,8 +86,18 @@ export const ScamShieldView: React.FC<ScamShieldViewProps> = ({
       const data = await analyzeScamMessage(inputText);
       setVerdict(data);
       setIsPinned(false);
-      // Persist in Tier-1 cache for instant repeat lookups
+      // Persist in client-side caches for instant repeat lookups
+      setCachedResponse(cacheKey, data);
       setCachedScamAnalysis(inputText, data);
+
+      // Proactive Workflow Interlink: Scam Shield logs straight to Caregiver Bridge
+      if (data.threat_score > 75) {
+        logScamThreat({
+          threatScore: data.threat_score,
+          explanation: data.plain_explanation,
+          sender: 'SMS Intercept'
+        });
+      }
     } catch (err: any) {
       setErrorMsg(err.message || "I'm having a little trouble reading that right now; let's take a deep breath and try reading it together.");
     } finally {

@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import type { DailyPulse, ChecklistItem, AdvisoryNote } from '../types';
 import { fetchDailyPulse, toggleChecklistTask, dispatchCaregiver } from '../api';
+import { useCompanionContext, type MedicationItem } from '../context/CompanionContext';
+import { getCachedResponse, setCachedResponse } from '../utils/cache';
 import { VoiceSpeakerButton } from './VoiceController';
 
 interface DailyPulseViewProps {
@@ -34,6 +36,9 @@ export const DailyPulseView: React.FC<DailyPulseViewProps> = ({
   const [snoozedUntil, setSnoozedUntil] = useState<number | null>(null);
   const [encouragementBanner, setEncouragementBanner] = useState<string | null>(null);
   const [emergencyAlertSent, setEmergencyAlertSent] = useState<boolean>(false);
+
+  // Proactive Companion Context
+  const { dailyRoutine, toggleMedicationCompletion, incrementHydration } = useCompanionContext();
 
   // Weather & Hydration Advisories
   const weatherAdvisory = React.useMemo(() => ({
@@ -58,8 +63,15 @@ export const DailyPulseView: React.FC<DailyPulseViewProps> = ({
   }, [speechRate]);
 
   const loadPulse = async (options?: { fatigue?: boolean; missedMed?: boolean; mood?: string }) => {
-    setLoading(true);
-    setErrorMsg(null);
+    // 0ms / sub-100ms instant display from cache
+    if (!options) {
+      const cached = getCachedResponse('daily_pulse_feed');
+      if (cached) {
+        setPulse(cached);
+        setLoading(false);
+      }
+    }
+
     try {
       const data = await fetchDailyPulse({
         user_mood: options?.mood || activeMood,
@@ -67,8 +79,11 @@ export const DailyPulseView: React.FC<DailyPulseViewProps> = ({
         missed_medication: options?.missedMed || false,
       });
       setPulse(data);
+      setCachedResponse('daily_pulse_feed', data);
     } catch (err: any) {
-      setErrorMsg(err.message || "We had a slight hiccup loading your daily pulse. Tap Refresh to try again.");
+      if (!pulse) {
+        setErrorMsg(err.message || "We had a slight hiccup loading your daily pulse. Tap Refresh to try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -189,6 +204,87 @@ export const DailyPulseView: React.FC<DailyPulseViewProps> = ({
 
   return (
     <section className="space-y-8" aria-label="Daily Companion and Health Pulse">
+      {/* 1. Ambient Care Card (Instantiated automatically on boot from CompanionContext) */}
+      <div className="bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950 border-4 border-blue-600 dark:border-blue-500 rounded-3xl p-6 md:p-8 shadow-lg transition-all">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-blue-700 text-white rounded-full text-xs font-black uppercase tracking-widest">
+              ☀️ Ambient Care Card
+            </span>
+            <span className="text-sm font-bold text-[var(--text-muted)]">
+              Proactive Session on Boot
+            </span>
+          </div>
+          <span className="px-3.5 py-1 bg-emerald-100 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-200 rounded-full text-xs font-black uppercase tracking-wider">
+            Active
+          </span>
+        </div>
+
+        <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-slate-100 mb-4">
+          {dailyRoutine.greeting}
+        </h2>
+
+        {/* Hydration Goal and Tracker */}
+        <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-4 border-2 border-blue-200 dark:border-slate-700 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl" aria-hidden="true">💧</span>
+            <div>
+              <p className="text-base font-bold text-slate-800 dark:text-slate-200 m-0">
+                Hydration Tracker: {dailyRoutine.currentHydrationOz} / {dailyRoutine.hydrationGoalOz} oz
+              </p>
+              <div className="w-56 bg-slate-200 dark:bg-slate-700 rounded-full h-3 mt-2 overflow-hidden">
+                <div
+                  className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(100, (dailyRoutine.currentHydrationOz / dailyRoutine.hydrationGoalOz) * 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => incrementHydration(8)}
+            aria-label="Drink 8 ounces of water and update tracker"
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base rounded-xl shadow-xs min-h-[48px] flex items-center justify-center gap-2 transition"
+          >
+            <span>+8 oz Water Sip</span>
+          </button>
+        </div>
+
+        {/* Daily Routine Medications from CompanionContext */}
+        <div className="space-y-2">
+          <p className="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+            Today's Scheduled Medication Checklist:
+          </p>
+          {dailyRoutine.medications.map((med: MedicationItem) => (
+            <div
+              key={med.id}
+              onClick={() => toggleMedicationCompletion(med.id)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Mark ${med.name} as ${med.completed ? 'incomplete' : 'completed'}`}
+              className={`flex items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition min-h-[48px] ${
+                med.completed
+                  ? 'bg-emerald-50 border-emerald-400 text-emerald-950'
+                  : 'bg-white dark:bg-slate-800 border-blue-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-blue-400'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl" aria-hidden="true">{med.completed ? '✅' : '💊'}</span>
+                <div>
+                  <p className={`text-base md:text-lg font-bold m-0 ${med.completed ? 'line-through text-emerald-800' : ''}`}>
+                    {med.name}
+                  </p>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Scheduled: {med.time}</span>
+                </div>
+              </div>
+              <span className="text-xs font-bold uppercase px-3 py-1 rounded-full bg-blue-100 dark:bg-slate-700 text-blue-900 dark:text-blue-100">
+                {med.completed ? 'Done' : 'Pending'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Encouraging Companion Audio Feedback Banner */}
       {encouragementBanner && (
         <div
