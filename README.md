@@ -9,6 +9,14 @@ A production-grade, senior-first generative AI companion platform engineered to 
 
 ---
 
+## 🌐 Live Production URL
+
+- **Live Application URL**: [https://actress-resolve-offers-invite.trycloudflare.com](https://actress-resolve-offers-invite.trycloudflare.com)
+- **API Health Endpoint**: [https://actress-resolve-offers-invite.trycloudflare.com/api/health](https://actress-resolve-offers-invite.trycloudflare.com/api/health)
+- **Interactive API Swagger Docs**: [https://actress-resolve-offers-invite.trycloudflare.com/docs](https://actress-resolve-offers-invite.trycloudflare.com/docs)
+
+---
+
 ## 🏛️ Architecture & Three Connected Workflows
 
 ```
