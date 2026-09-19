@@ -182,6 +182,30 @@ async def stream_chat(req: ChatRequest):
     return EventSourceResponse(event_generator())
 
 
+# --- NESTOR ENHANCED PROACTIVE ENGINE (DUAL-TIER ROUTING & STREAMING) ---
+from companion_engine import call_streaming_llm, route_and_execute_llm, CompanionResponseSchema
+from fastapi.responses import StreamingResponse
+
+@app.post("/api/companion/stream")
+async def companion_stream(payload: dict):
+    """Sub-500ms TTFT SSE streaming endpoint using dual-tier routing and semantic caching."""
+    user_input = payload.get("user_input", "")
+    user_time = payload.get("user_time", "morning")
+    async def event_generator():
+        async for chunk in call_streaming_llm(user_input, user_time):
+            yield f"data: {chunk}\n\n"
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@app.post("/api/companion/nestor", response_model=CompanionResponseSchema)
+async def companion_nestor(payload: dict):
+    """Direct JSON endpoint returning structured CompanionResponseSchema."""
+    user_input = payload.get("user_input", "")
+    user_time = payload.get("user_time", "morning")
+    return await route_and_execute_llm(user_input, user_time)
+
+
+
 # Mount static production frontend build if present
 import os
 from fastapi.staticfiles import StaticFiles

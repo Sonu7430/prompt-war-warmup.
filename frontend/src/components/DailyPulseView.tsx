@@ -122,8 +122,18 @@ export const DailyPulseView: React.FC<DailyPulseViewProps> = ({
 
   return (
     <section className="space-y-8" aria-label="Daily Companion and Health Pulse">
-      {/* Warm Greeting Hero Banner */}
-      <div className="bg-[var(--bg-card)] border-3 border-[var(--border-color)] rounded-3xl p-6 md:p-8 shadow-sm transition-all">
+      {/* Today's Morning Care Card (Proactive Alignment Hero) */}
+      <div className="bg-[var(--bg-card)] border-4 border-blue-600 dark:border-blue-500 rounded-3xl p-6 md:p-8 shadow-md transition-all">
+        {/* Alignment Badge */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-blue-700 text-white rounded-full text-xs font-black uppercase tracking-widest">
+            🌅 Today's Morning Care Card
+          </span>
+          <span className="text-sm font-bold text-[var(--text-muted)]">
+            Proactive Health Pulse
+          </span>
+        </div>
+
         <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
             <span className="p-3 bg-amber-100 text-amber-900 rounded-2xl" aria-hidden="true">
@@ -142,21 +152,37 @@ export const DailyPulseView: React.FC<DailyPulseViewProps> = ({
           <VoiceSpeakerButton
             textToRead={textToReadAloud}
             speechRate={speechRate}
-            label="Listen to My Morning Brief"
+            label="Listen to Morning Brief"
           />
         </div>
 
-        {/* Gentle Reminder Box */}
-        <div className="bg-blue-50 dark:bg-slate-900 border-2 border-blue-300 dark:border-blue-700 rounded-2xl p-5 mb-5 flex items-start gap-4">
-          <Heart className="w-7 h-7 text-blue-700 flex-shrink-0 mt-1" aria-hidden="true" />
-          <div>
-            <h3 className="text-lg font-black text-blue-950 dark:text-blue-200 m-0">
-              Gentle Care Note
-            </h3>
-            <p className="text-lg font-medium text-blue-900 dark:text-blue-100 m-0 mt-1">
-              {pulse.gentle_reminder}
-            </p>
+        {/* 1 Bite-Sized Reminder & 1 Calming Observation */}
+        <div className="bg-blue-50 dark:bg-slate-900 border-2 border-blue-300 dark:border-blue-700 rounded-2xl p-5 mb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Heart className="w-7 h-7 text-blue-700 flex-shrink-0 mt-1" aria-hidden="true" />
+            <div>
+              <h3 className="text-lg font-black text-blue-950 dark:text-blue-200 m-0">
+                Gentle Medication & Hydration Reminder
+              </h3>
+              <p className="text-lg font-medium text-blue-900 dark:text-blue-100 m-0 mt-1">
+                {pulse.gentle_reminder}
+              </p>
+            </div>
           </div>
+
+          {/* Single-tap direct action */}
+          <button
+            type="button"
+            onClick={() => {
+              if (pulse.routine_checklist.length > 0) {
+                handleToggleTask(pulse.routine_checklist[0]);
+              }
+            }}
+            className="flex-shrink-0 flex items-center gap-2 px-5 py-3 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold text-base shadow-sm min-h-[48px]"
+          >
+            <CheckCircle2 className="w-5 h-5 text-white" />
+            <span>Mark Morning Meds Done</span>
+          </button>
         </div>
 
         {/* Quick Health Check-in Buttons */}

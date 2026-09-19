@@ -86,18 +86,35 @@ A production-grade, senior-first generative AI companion platform engineered to 
 
 ---
 
+## 🧠 Nestor Enhanced Multi-Agent Engine (Alignment & Efficiency)
+
+The platform features **"Nestor"**, a token-optimized, proactive companion with strict delimited XML instruction parsing:
+- **PROACTIVE_ROUTINE**: Under 45 words, 1 bite-sized reminder, 1 calming observation, and 1 direct single-tap action.
+- **COGNITIVE_SIMPLIFIER**: 5th-grade reading level, 3 core takeaway sections, and 1 grounding everyday analogy.
+- **GUARDIAN_SHIELD**: Threat probability scoring (0-100), psychological manipulation explanation, and direct binary defense action.
+- **Dual-Tier Model Routing**: Lightweight models (`gemini-1.5-flash` / `gpt-4o-mini`) for classification & routines, and frontier models for dense document simplification.
+- **Sub-500ms SSE Streaming**: Eliminates TTFT bottlenecks via `/api/companion/stream`.
+- **In-Memory Semantic Caching**: Sub-5ms instant lookup for recurring scam patterns and routine queries.
+
+---
+
 ## 🧪 Automated Testing Suite
 
-All 28 unit and integration tests pass with 100% coverage across schemas, security guardrails, JSON repair, and workflows:
+Dedicated test directory (`/tests` and `/backend/tests`) validating schema integrity, defensive jailbreak containment, and API resilience:
 
 ```bash
+# Run complete test suite with coverage
+pytest tests/ --cov=.
+
+# Run full backend suite
 cd backend
 python -m pytest -v
 ```
 
 Test coverage includes:
+- `test_companion_pipeline.py`: Nestor CompanionResponseSchema validation, prompt injection containment, and LLM timeout fallback.
 - `test_schemas.py`: Pydantic schema validation & bounds checking.
-- `test_security.py`: 10 prompt injection payloads + PII sanitization.
+- `test_security.py`: 10+ prompt injection payloads, DAN mode containment, and PII sanitization.
 - `test_json_repair.py`: Resilient LLM JSON repair for trailing commas, code blocks, and single quotes.
 - `test_workflows.py`: End-to-end integration of all 3 connected workflows and cross-pinning.
 

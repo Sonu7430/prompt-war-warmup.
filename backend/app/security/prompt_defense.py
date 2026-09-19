@@ -10,8 +10,8 @@ from app.security.pii_guard import sanitize_pii
 
 # High-risk adversarial injection signatures
 INJECTION_SIGNATURES = [
-    (r"(?i)\bignore\s+(all\s+)?(previous|prior)\s+(instructions|directives|rules)\b", "Instruction override attack"),
-    (r"(?i)\bdisregard\s+(all\s+)?(previous|system)\b", "Disregard system directives"),
+    (r"(?i)\bignore\s+(all\s+)?(previous|prior|your|system|\s*)+\s*(instructions|directives|rules)\b", "Instruction override attack"),
+    (r"(?i)\bdisregard\s+(all\s+)?(previous|system|prior|rules)\b", "Disregard system directives"),
     (r"(?i)\b(reveal|show|print|dump|leak|output)\s+(your\s+)?(system\s+prompt|instructions|initial\s+prompt)\b", "System prompt extraction"),
     (r"(?i)\b(dan\s+mode|jailbreak|developer\s+mode\s+enabled|unfiltered\s+mode)\b", "Persona jailbreak / DAN mode"),
     (r"(?i)<\s*/?\s*(system_instruction|system|few_shot_examples|assistant|user)\s*>", "XML delimiter injection / tag smuggling"),
@@ -19,6 +19,7 @@ INJECTION_SIGNATURES = [
     (r"(?i)\b(act\s+as|pretend\s+you\s+are)\s+(an\s+evil|an\s+unrestricted|a\s+hacked)\b", "Adversarial roleplay"),
     (r"(?i)\bprescribe\s+(me\s+)?(\d+\s*mg\s+)?([a-zA-Z]+|medication|dosage|pills|narcotics|prescription)\b", "Unauthorized medical prescription attempt"),
     (r"(?i)\b(bypass|disable)\s+(safety|content\s+filters|security|guardrails)\b", "Filter bypass trigger"),
+    (r"(?i)\b(bypass|steal|crack|hack|reveal)\s+.*?(password|passwords|credentials|pin)\b", "Credential/password bypass trigger"),
     (r"(?i)\b(sudo|eval|exec|import\s+os|system\(|chmod)\b", "Code execution payload in natural language"),
 ]
 
