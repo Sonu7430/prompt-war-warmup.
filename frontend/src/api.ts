@@ -1,6 +1,6 @@
 import type { DailyPulse, SimplifiedDoc, ScamVerdict, SafetyCheckResult } from './types';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = '/api';
 
 export const fallbackElderlyMessage =
   "I'm having a little trouble reading that right now; let's take a deep breath and try reading it together.";

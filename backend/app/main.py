@@ -180,3 +180,24 @@ async def stream_chat(req: ChatRequest):
         yield {"data": json.dumps({"token": "", "done": True})}
 
     return EventSourceResponse(event_generator())
+
+
+# Mount static production frontend build if present
+import os
+from fastapi.staticfiles import StaticFiles
+
+frontend_dist = os.getenv("STATIC_DIR", "")
+if not frontend_dist or not os.path.exists(frontend_dist):
+    for candidate in [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "dist")),
+        "/app/frontend/dist",
+        "/app/dist",
+    ]:
+        if os.path.exists(candidate):
+            frontend_dist = candidate
+            break
+
+if frontend_dist and os.path.exists(frontend_dist):
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
+
