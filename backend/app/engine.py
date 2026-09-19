@@ -70,8 +70,18 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 
-async def call_gemini_api(prompt: str) -> Optional[str]:
-    """Call Google Gemini 1.5/2.0 API if key is set."""
+# Strict token budgets according to hackathon performance specification
+TOKEN_BUDGETS = {
+    "proactive": 150,
+    "scam": 220,
+    "medical": 300,
+    "router": 60,
+    "default": 200,
+}
+
+
+async def call_gemini_api(prompt: str, max_tokens: int = 200) -> Optional[str]:
+    """Call Google Gemini API with exact token budgeting."""
     if not GEMINI_API_KEY:
         return None
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
@@ -79,6 +89,7 @@ async def call_gemini_api(prompt: str) -> Optional[str]:
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.2,
+            "maxOutputTokens": max_tokens,
             "responseMimeType": "application/json"
         }
     }
@@ -93,8 +104,8 @@ async def call_gemini_api(prompt: str) -> Optional[str]:
     return None
 
 
-async def call_openai_api(prompt: str) -> Optional[str]:
-    """Call OpenAI API if key is set."""
+async def call_openai_api(prompt: str, max_tokens: int = 200) -> Optional[str]:
+    """Call OpenAI API with exact token budgeting."""
     if not OPENAI_API_KEY:
         return None
     url = "https://api.openai.com/v1/chat/completions"
@@ -103,7 +114,8 @@ async def call_openai_api(prompt: str) -> Optional[str]:
         "model": "gpt-4o-mini",
         "messages": [{"role": "user", "content": prompt}],
         "response_format": {"type": "json_object"},
-        "temperature": 0.2
+        "temperature": 0.2,
+        "max_tokens": max_tokens,
     }
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -262,17 +274,26 @@ def generate_high_fidelity_mock(prompt_type: str, user_text: str) -> Dict[str, A
 async def execute_prompt_with_fallback(prompt_type: str, raw_prompt: str, user_text: str) -> Dict[str, Any]:
     """
     Executes a structured prompt against Gemini or OpenAI if configured,
+    enforcing token budgets (150 for proactive, 220 for scam, 300 for medical),
     repairing JSON, or falling back seamlessly to the safety-certified high-fidelity mock engine.
     """
+    # Enforce exact token budget per workflow specification
+    budget_map = {
+        "medical": TOKEN_BUDGETS["medical"],       # 300
+        "scam": TOKEN_BUDGETS["scam"],             # 220
+        "daily_pulse": TOKEN_BUDGETS["proactive"], # 150
+        "router": TOKEN_BUDGETS["router"],         # 60
+    }
+    max_tokens = budget_map.get(prompt_type, TOKEN_BUDGETS["default"])
     raw_response = None
 
     # Try Gemini API if key is available
     if GEMINI_API_KEY:
-        raw_response = await call_gemini_api(raw_prompt)
+        raw_response = await call_gemini_api(raw_prompt, max_tokens=max_tokens)
 
     # Try OpenAI API if key is available and Gemini didn't return
     if not raw_response and OPENAI_API_KEY:
-        raw_response = await call_openai_api(raw_prompt)
+        raw_response = await call_openai_api(raw_prompt, max_tokens=max_tokens)
 
     # Parse and repair if we got an LLM response
     if raw_response:

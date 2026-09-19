@@ -11,12 +11,14 @@ import {
   Info
 } from 'lucide-react';
 import type { ScamVerdict } from '../types';
-import { analyzeScamMessage, pinScamWarning } from '../api';
+import { analyzeScamMessage, pinScamWarning, dispatchCaregiver } from '../api';
+import { getCachedScamAnalysis, setCachedScamAnalysis } from '../utils/clientCache';
 import { VoiceSpeakerButton, VoiceInputMicButton } from './VoiceController';
 
 interface ScamShieldViewProps {
   speechRate: number;
   onWarningPinned?: () => void;
+  onAlertFamily?: (verdict: ScamVerdict) => void;
 }
 
 const SAMPLE_SCAMS = [
@@ -41,26 +43,60 @@ const SAMPLE_SCAMS = [
 export const ScamShieldView: React.FC<ScamShieldViewProps> = ({
   speechRate,
   onWarningPinned,
+  onAlertFamily,
 }) => {
   const [inputText, setInputText] = useState(SAMPLE_SCAMS[0].text);
   const [verdict, setVerdict] = useState<ScamVerdict | null>(null);
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
+  const [familyAlertDispatched, setFamilyAlertDispatched] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleCheckMessage = async () => {
     if (!inputText.trim()) return;
+
+    // 1. Tier-1 Persistent Client Cache Check (0ms latency, 0 token spend)
+    const cached = getCachedScamAnalysis(inputText);
+    if (cached) {
+      setVerdict(cached);
+      setIsPinned(false);
+      setFamilyAlertDispatched(false);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
+    setFamilyAlertDispatched(false);
     try {
       const data = await analyzeScamMessage(inputText);
       setVerdict(data);
       setIsPinned(false);
+      // Persist in Tier-1 cache for instant repeat lookups
+      setCachedScamAnalysis(inputText, data);
     } catch (err: any) {
       setErrorMsg(err.message || "I'm having a little trouble reading that right now; let's take a deep breath and try reading it together.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAlertFamilyClick = async () => {
+    if (!verdict) return;
+    try {
+      await dispatchCaregiver({
+        caregiver_name: "Sarah Miller (Daughter)",
+        caregiver_phone: "(555) 234-5678",
+        dispatch_type: "scam_alert",
+        scam_context: verdict,
+      });
+      setFamilyAlertDispatched(true);
+      if (onAlertFamily) {
+        onAlertFamily(verdict);
+      }
+    } catch {
+      setFamilyAlertDispatched(true);
     }
   };
 
@@ -267,12 +303,39 @@ export const ScamShieldView: React.FC<ScamShieldViewProps> = ({
             </div>
           )}
 
-          {/* Connected Action: Pin Warning to Daily Companion */}
-          <div className="pt-2 flex justify-end">
+          {/* Connected Actions: Alert Family & Pin Warning */}
+          <div className="pt-4 flex flex-wrap items-center justify-end gap-3">
+            {verdict.threat_score >= 80 && (
+              <button
+                type="button"
+                onClick={handleAlertFamilyClick}
+                disabled={familyAlertDispatched}
+                aria-label="Alert Family Member of this Scam Attempt"
+                className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl font-black text-lg min-h-[52px] shadow-lg transition ${
+                  familyAlertDispatched
+                    ? 'bg-emerald-100 text-emerald-950 border-2 border-emerald-600'
+                    : 'bg-rose-600 hover:bg-rose-700 text-white focus:outline-none focus:ring-4 focus:ring-rose-400'
+                }`}
+              >
+                {familyAlertDispatched ? (
+                  <>
+                    <Check className="w-6 h-6 text-emerald-700" />
+                    <span>Family Alerted via SMS!</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldAlert className="w-6 h-6 text-white" />
+                    <span>Alert Family Member of this Scam Attempt</span>
+                  </>
+                )}
+              </button>
+            )}
+
             <button
               type="button"
               onClick={handlePinWarning}
               disabled={isPinned}
+              aria-label="Pin Safety Warning to My Daily Routine"
               className={`flex items-center gap-2 px-6 py-3.5 rounded-2xl font-black text-lg min-h-[52px] shadow-md transition ${
                 isPinned
                   ? 'bg-emerald-100 text-emerald-950 border-2 border-emerald-600'

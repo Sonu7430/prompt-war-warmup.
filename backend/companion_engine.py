@@ -90,6 +90,12 @@ query_cache.put(
 )
 
 
+# Strict token budgets according to hackathon performance specification
+MAX_TOKENS_PROACTIVE = 150
+MAX_TOKENS_SCAM = 220
+MAX_TOKENS_MEDICAL = 300
+
+
 # --- DUAL-TIER MODEL ROUTING & STREAMING ---
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -98,8 +104,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 async def route_and_execute_llm(user_input: str, user_time: str = "morning") -> CompanionResponseSchema:
     """
-    Tier 1 (Fast Flash/Mini): Proactive routine & scam quick check.
-    Tier 2 (Frontier): Complex medical or legal simplification.
+    Tier 1 (Fast Flash/Mini): Proactive routine (max 150 tokens) & scam quick check (max 220 tokens).
+    Tier 2 (Frontier): Complex medical or legal simplification (max 300 tokens).
     """
     # 1. Check cache first (< 5ms)
     cached = query_cache.get(user_input)

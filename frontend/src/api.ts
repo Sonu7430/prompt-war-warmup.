@@ -145,3 +145,60 @@ export async function streamChatResponse(
     onError(err.message || fallbackElderlyMessage);
   }
 }
+
+// --- WORKFLOW: CAREGIVER PEACE OF MIND DISPATCH BRIDGE ---
+
+export async function dispatchCaregiver(req: import('./types').CaregiverDispatchRequest): Promise<import('./types').CaregiverDispatchResponse> {
+  const res = await fetch(`${API_BASE}/caregiver/dispatch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    throw new Error("Unable to reach caregiver dispatch service");
+  }
+  return res.json();
+}
+
+export async function listCaregiverDispatches(): Promise<import('./types').CaregiverDispatchResponse[]> {
+  const res = await fetch(`${API_BASE}/caregiver/dispatches`);
+  if (!res.ok) {
+    return [];
+  }
+  return res.json();
+}
+
+// --- WORKFLOW: GENTLE COGNITIVE STIMULATION & MEMORY JOURNAL ---
+
+export async function getReminiscencePrompt(): Promise<import('./types').ReminiscencePrompt> {
+  const res = await fetch(`${API_BASE}/reminiscence/prompt`);
+  if (!res.ok) {
+    return {
+      id: 'prompt-default',
+      theme: 'Music & Youth',
+      prompt_question: 'What was your favorite song when you were twenty years old?',
+      suggested_era: 'Early Adulthood',
+    };
+  }
+  return res.json();
+}
+
+export async function submitMemoryReflection(req: import('./types').MemoryReflectionRequest): Promise<import('./types').MemoryCard> {
+  const res = await fetch(`${API_BASE}/reminiscence/reflect`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    throw new Error("Unable to save memory reflection");
+  }
+  return res.json();
+}
+
+export async function listMemoryCards(): Promise<import('./types').MemoryCard[]> {
+  const res = await fetch(`${API_BASE}/reminiscence/entries`);
+  if (!res.ok) {
+    return [];
+  }
+  return res.json();
+}

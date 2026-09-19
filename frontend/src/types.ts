@@ -54,3 +54,40 @@ export interface SafetyCheckResult {
 
 export type TextSizeLevel = 'standard' | 'large' | 'jumbo';
 export type ContrastMode = 'warm' | 'high-contrast' | 'night';
+
+export interface CaregiverDispatchRequest {
+  caregiver_name?: string;
+  caregiver_phone?: string;
+  dispatch_type: 'one_tap_checkin' | 'scam_alert' | 'med_confirmed' | 'missed_routine';
+  scam_context?: ScamVerdict;
+}
+
+export interface CaregiverDispatchResponse {
+  id: string;
+  status: string;
+  timestamp: string;
+  simulated_sms_preview: string;
+  recipient: string;
+  dispatch_type: string;
+}
+
+export interface ReminiscencePrompt {
+  id: string;
+  theme: string;
+  prompt_question: string;
+  suggested_era: string;
+}
+
+export interface MemoryReflectionRequest {
+  prompt_question: string;
+  story_text: string;
+}
+
+export interface MemoryCard {
+  id: string;
+  prompt_question: string;
+  story_text: string;
+  ai_reflection: string;
+  timestamp: string;
+  era_tag: string;
+}

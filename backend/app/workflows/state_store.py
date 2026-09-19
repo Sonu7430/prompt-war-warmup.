@@ -84,6 +84,9 @@ class StateStore:
     def get_advisories(self) -> List[AdvisoryNote]:
         return self.advisory_notes
 
+    def get_advisory_notes(self) -> List[AdvisoryNote]:
+        return self.advisory_notes
+
     def get_checklist(self) -> List[ChecklistItem]:
         return self.routine_checklist
 

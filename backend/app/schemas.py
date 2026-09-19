@@ -115,3 +115,40 @@ class WorkflowIntent(BaseModel):
     intent: Literal["daily_pulse", "medical_doc", "scam_shield", "general_companion"]
     confidence: float = 0.90
 
+
+# --- FAMILY & CAREGIVER DISPATCH BRIDGE ---
+
+class CaregiverDispatchRequest(BaseModel):
+    caregiver_name: str = "Sarah"
+    caregiver_phone: str = "(555) 234-5678"
+    dispatch_type: Literal["one_tap_checkin", "med_confirmed", "scam_alert", "missed_routine"]
+    custom_note: Optional[str] = None
+    scam_context: Optional[ScamVerdict] = None
+
+
+class CaregiverDispatchResponse(BaseModel):
+    id: str
+    status: Literal["dispatched", "delivered"]
+    timestamp: str
+    simulated_sms_preview: str
+    recipient: str
+    dispatch_type: str
+
+
+# --- GENTLE COGNITIVE STIMULATION & MEMORY JOURNAL ---
+
+class MemoryReflectionRequest(BaseModel):
+    prompt_id: Optional[str] = "prompt-1"
+    prompt_question: str
+    story_text: str = Field(..., min_length=2)
+
+
+class MemoryCard(BaseModel):
+    id: str
+    prompt_question: str
+    story_text: str
+    ai_reflection: str
+    timestamp: str
+    era_tag: Optional[str] = "Life Story"
+
+

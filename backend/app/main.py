@@ -5,6 +5,7 @@ prompt injection defense, and 3 interconnected workflows.
 """
 
 import json
+from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -180,6 +181,50 @@ async def stream_chat(req: ChatRequest):
         yield {"data": json.dumps({"token": "", "done": True})}
 
     return EventSourceResponse(event_generator())
+
+
+# --- WORKFLOW: FAMILY & CAREGIVER PEACE OF MIND DISPATCH BRIDGE ---
+from app.schemas import CaregiverDispatchRequest, CaregiverDispatchResponse, MemoryReflectionRequest, MemoryCard
+from app.workflows.caregiver_bridge import dispatch_caregiver_update, get_recent_dispatches
+from app.workflows.reminiscence import get_daily_reminiscence_prompt, create_memory_reflection, get_memory_cards
+
+@app.post("/api/caregiver/dispatch", response_model=CaregiverDispatchResponse)
+async def dispatch_caregiver(req: CaregiverDispatchRequest):
+    """Dispatches a simulated SMS/Webhook update to a family member or caregiver."""
+    return dispatch_caregiver_update(req)
+
+
+@app.get("/api/caregiver/dispatches", response_model=List[CaregiverDispatchResponse])
+async def list_caregiver_dispatches():
+    """Lists recent dispatch events sent to family members."""
+    return get_recent_dispatches()
+
+
+# --- WORKFLOW: GENTLE COGNITIVE STIMULATION & MEMORY JOURNAL ---
+
+@app.get("/api/reminiscence/prompt")
+async def get_reminiscence_prompt():
+    """Fetches the rotating daily nostalgic prompt question."""
+    return get_daily_reminiscence_prompt()
+
+
+@app.post("/api/reminiscence/reflect", response_model=MemoryCard)
+async def submit_reminiscence_story(req: MemoryReflectionRequest):
+    """Processes spoken senior memory, generates warm AI reflection, and stores card."""
+    # Sanitize input against prompt injection or malicious scripts
+    security = inspect_prompt(req.story_text)
+    safe_req = MemoryReflectionRequest(
+        prompt_id=req.prompt_id,
+        prompt_question=req.prompt_question,
+        story_text=security.sanitized_text
+    )
+    return create_memory_reflection(safe_req)
+
+
+@app.get("/api/reminiscence/entries", response_model=List[MemoryCard])
+async def list_memory_cards():
+    """Returns stored life story memory cards."""
+    return get_memory_cards()
 
 
 # --- NESTOR ENHANCED PROACTIVE ENGINE (DUAL-TIER ROUTING & STREAMING) ---
